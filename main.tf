@@ -11,6 +11,12 @@ provider "azurerm" {
   features {}
 }
 
+# variables
+variable "source_address_prefix" {
+  description = "The source address prefix for the security rule"
+  type        = string
+}
+
 # create a resource group in azure
 # first argument - resource type (azurerm_resource_group), second argument - resource name (mtc-rg)
 resource "azurerm_resource_group" "mtc-rg" {
@@ -55,7 +61,7 @@ resource "azurerm_network_security_group" "mtc-sg" {
 }
 
 # create a security rule in the network security group
-resource "azurerum_network_security_rule" "mtc-dev-rule" {
+resource "azurerm_network_security_rule" "mtc-dev-rule" {
   name                        = "mtc-dev-rule"
   priority                    = 100
   direction                   = "Inbound"
@@ -63,7 +69,7 @@ resource "azurerum_network_security_rule" "mtc-dev-rule" {
   protocol                    = "*"
   source_port_range           = "*"
   destination_port_range      = "*"
-  source_address_prefix       = "178.155.243.43/32"
+  source_address_prefix       = var.source_address_prefix
   destination_address_prefix  = "*"
   resource_group_name         = azurerm_resource_group.mtc-rg.name
   network_security_group_name = azurerm_network_security_group.mtc-sg.name
