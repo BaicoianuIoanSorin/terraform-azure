@@ -14,15 +14,16 @@ provider "azurerm" {
 # create a resource group in azure
 # first argument - resource type (azurerm_resource_group), second argument - resource name (mtc-rg)
 resource "azurerm_resource_group" "mtc-rg" {
-  name     = "mtc-resources"
+  name     = "mtc-rg"
   location = "East US"
   tags = {
     environment = "dev"
   }
 }
 
+# create a virtual network in the resource group
 resource "azurerm_virtual_network" "mtc-vn" {
-  name                = "mtc-network"
+  name                = "mtc-vn"
   resource_group_name = azurerm_resource_group.mtc-rg.name
   location            = azurerm_resource_group.mtc-rg.location
   # address space for subnet
@@ -31,5 +32,40 @@ resource "azurerm_virtual_network" "mtc-vn" {
   tags = {
     environment = "dev"
   }
+}
+
+# create a subnet in the virtual network
+# you have to create the virtual network before creating the subnet
+resource "azurerm_subnet" "mtc-subnet" {
+  name                 = "mtc-subnet"
+  resource_group_name  = azurerm_resource_group.mtc-rg.name
+  virtual_network_name = azurerm_virtual_network.mtc-vn.name
+  address_prefixes     = ["10.123.1.0/24"]
+}
+
+# create a network security group
+resource "azurerm_network_security_group" "mtc-sg" {
+  name                = "mtc-sg"
+  location            = azurerm_resource_group.mtc-rg.location
+  resource_group_name = azurerm_resource_group.mtc-rg.name
+
+  tags = {
+    environment = "dev"
+  }
+}
+
+# create a security rule in the network security group
+resource "azurerum_network_security_rule" "mtc-dev-rule" {
+  name                        = "mtc-dev-rule"
+  priority                    = 100
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "*"
+  source_port_range           = "*"
+  destination_port_range      = "*"
+  source_address_prefix       = "178.155.243.43/32"
+  destination_address_prefix  = "*"
+  resource_group_name         = azurerm_resource_group.mtc-rg.name
+  network_security_group_name = azurerm_network_security_group.mtc-sg.name
 }
 
