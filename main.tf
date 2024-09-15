@@ -11,12 +11,6 @@ provider "azurerm" {
   features {}
 }
 
-# variables
-variable "source_address_prefix" {
-  description = "The source address prefix for the security rule"
-  type        = string
-}
-
 # create a resource group in azure
 # first argument - resource type (azurerm_resource_group), second argument - resource name (mtc-rg)
 resource "azurerm_resource_group" "mtc-rg" {
@@ -74,4 +68,80 @@ resource "azurerm_network_security_rule" "mtc-dev-rule" {
   resource_group_name         = azurerm_resource_group.mtc-rg.name
   network_security_group_name = azurerm_network_security_group.mtc-sg.name
 }
+
+resource "azurerm_subnet_network_security_group_association" "mtc-sga" {
+  subnet_id                 = azurerm_subnet.mtc-subnet.id
+  network_security_group_id = azurerm_network_security_group.mtc-sg.id
+}
+
+resource "azurerm_public_ip" "mtc-ip" {
+  name                = "mtc-ip"
+  location            = azurerm_resource_group.mtc-rg.location
+  resource_group_name = azurerm_resource_group.mtc-rg.name
+  allocation_method   = "Dynamic"
+
+  tags = {
+    environment = "dev"
+  }
+}
+
+resource "azurerm_network_interface" "mtc-nic" {
+  name                = "mtc-nic"
+  location            = azurerm_resource_group.mtc-rg.location
+  resource_group_name = azurerm_resource_group.mtc-rg.name
+
+  ip_configuration {
+    name                          = "internal"
+    subnet_id                     = azurerm_subnet.mtc-subnet.id
+    private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.mtc-ip.id
+  }
+
+  tags = {
+    environment = "dev"
+  }
+}
+
+
+resource "azurerm_linux_virtual_machine" "mtc-vm" {
+  name                  = "mtv-vm"
+  resource_group_name   = azurerm_resource_group.mtc-rg.name
+  location              = azurerm_resource_group.mtc-rg.location
+  size                  = "Standard_B1s"
+  admin_username        = "adminuser"
+  network_interface_ids = [azurerm_network_interface.mtc-nic.id]
+
+  admin_ssh_key {
+    username   = "adminuser"
+    public_key = file(var.public_key_location)
+  }
+
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
+
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "UbuntuServer"
+    sku       = "18.04-LTS"
+    version   = "latest"
+  }
+
+  custom_data = filebase64("customdata.tpl")
+
+  provisioner "local-exec" {
+    command = templatefile("windows-ssh-script.tpl", {
+      hostname     = self.public_ip_address,
+      user         = "adminuser",
+      identityFile = var.public_key_location
+    })
+    interpreter = ["PowerShell", "-Command"]
+  }
+
+  tags = {
+    environment = "dev"
+  }
+}
+
 

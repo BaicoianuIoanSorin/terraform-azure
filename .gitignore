@@ -1,2 +1,5 @@
 # Ignore Terraform variables files
 *.tfvars
+
+# Ignore specific files
+secret_values.tf
