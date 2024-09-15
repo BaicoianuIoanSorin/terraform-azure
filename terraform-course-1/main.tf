@@ -131,17 +131,33 @@ resource "azurerm_linux_virtual_machine" "mtc-vm" {
   custom_data = filebase64("customdata.tpl")
 
   provisioner "local-exec" {
-    command = templatefile("windows-ssh-script.tpl", {
+    command = templatefile("./scripts/${var.host_os}-ssh-script.tpl", {
       hostname     = self.public_ip_address,
       user         = "adminuser",
-      identityFile = var.public_key_location
+      identityFile = var.private_key_location
     })
-    interpreter = ["PowerShell", "-Command"]
+    interpreter = var.host_os == "windows" ? ["Powershell", "-Command"] : ["bash", "-c"]
   }
 
   tags = {
     environment = "dev"
   }
+}
+
+# adding a data block to get the public ip address after the VM is created
+# by default, when creating the azurerm_public_ip.mtc-ip resource, terraform will not return the ip address, so that's still null
+# creating the VM, the public ip address will be assigned to the VM
+# so that, afterwards, you can get this ip address using the data block
+# if not available after creating VM, do [terraform apply -refresh-only]
+data "azurerm_public_ip" "mtc-ip-data" {
+  name                = azurerm_public_ip.mtc-ip.name
+  resource_group_name = azurerm_resource_group.mtc-rg.name
+}
+
+# to get the output of the public ip address you can type in powershell [terraform output public_ip_address]
+# to get all outputs you can type in powershell [terraform output]
+output "public_ip_address" {
+  value = "${azurerm_linux_virtual_machine.mtc-vm.name}: ${data.azurerm_public_ip.mtc-ip-data.ip_address}"
 }
 
 
