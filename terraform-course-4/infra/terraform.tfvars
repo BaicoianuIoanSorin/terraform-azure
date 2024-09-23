@@ -1,0 +1,5 @@
+location             = "eastus"
+resource_group_name  = "rg-terraform-azure-04"
+storage_account_name = "terraformazureioan04"
+source_content       = "<h1>Ahoy, this website was deployed using Terraform!</h1>"
+index_document       = "index.html"
