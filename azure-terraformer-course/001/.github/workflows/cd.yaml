@@ -12,7 +12,7 @@ env:
   WORKING_DIRECTORY: "001/src/terraform"
   APPLICATION_NAME: "aztf"
   LOCATION: "westus"
-  ENVIRONMENT_NAME: "dev"
+  ENVIRONMENT_NAME: "dev" 
 
 jobs:
   terraform:
