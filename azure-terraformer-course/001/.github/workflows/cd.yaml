@@ -5,11 +5,11 @@ on:
     branches:
       - main
     paths:
-      - '001/src/terraform/**'
-      - '001/.github/workflows/cd.yaml'
+      - "001/src/terraform/**"
+      - "001/.github/workflows/cd.yaml"
 
 env:
-  WORKING_DIRECTORY: '001/src/terraform'
+  WORKING_DIRECTORY: "001/src/terraform"
   APPLICATION_NAME: "aztf"
   LOCATION: "westus"
   ENVIRONMENT_NAME: "dev"
@@ -18,17 +18,18 @@ jobs:
   terraform:
     runs-on: ubuntu-latest
     steps:
-      -uses: actions/checkout@3
+      - uses: actions/checkout@3
 
-      - name: hashicorp/setup-terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@3
         with:
-          terraform_version: 1.5.0
-          # is a feature of this action which i have found makes it more difficult to use 
+          terraform_version: 1.5.5
+          # is a feature of this action which i have found makes it more difficult to use
           # the terraform output in the following steps.
           terraform_wrapper: false
 
       - name: Terraform Apply
-        env: 
+        env:
           ARM_CLIENT_ID: ${{ vars.ARM_CLIENT_ID }}
           ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
           ARM_SUBSCRIPTION_ID: ${{ vars.ARM_SUBSCRIPTION_ID }}
@@ -47,5 +48,5 @@ jobs:
             -backend-config="storage_account_name=${BACKEND_STORAGE_ACCOUNT_NAME}" \
             -backend-config="container_name=${BACKEND_STORAGE_CONTAINER_NAME}" \
             -backend-config="key=${TF_BACKEND_KEY}"
-          
+
           terraform apply -auto-approve
